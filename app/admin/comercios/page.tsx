@@ -1,0 +1,58 @@
+import { Etiqueta, Tarjeta } from '@/components/app/ui'
+import { createClient } from '@/lib/supabase/server'
+import { FilaComercio } from './fila-comercio'
+import { NuevoComercio } from './nuevo-comercio'
+
+export default async function ComerciosPage() {
+  const supabase = await createClient()
+  const [{ data: comercios, error }, { data: cadetes }] = await Promise.all([
+    supabase
+      .from('comercios')
+      .select('id, nombre, tarifa, activo, cadete_fijo_id, perfil_id')
+      .order('activo', { ascending: false })
+      .order('nombre'),
+    supabase.from('cadetes').select('id, nombre').eq('activo', true).order('nombre'),
+  ])
+
+  return (
+    <div className="grid gap-8">
+      <header>
+        <Etiqueta>COMERCIOS</Etiqueta>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight">Comercios</h1>
+        <p className="mt-1 text-sm text-[var(--muted)]">
+          {comercios ? `${comercios.length} en total` : 'Cargando…'}
+        </p>
+      </header>
+
+      <NuevoComercio />
+
+      {error ? (
+        <Tarjeta>
+          <p className="text-sm text-[var(--orange)]">No pudimos cargar los comercios. Recargá la página.</p>
+        </Tarjeta>
+      ) : comercios.length === 0 ? (
+        <Tarjeta>
+          <p className="text-sm text-[var(--muted)]">Todavía no hay comercios. Creá el primero arriba.</p>
+        </Tarjeta>
+      ) : (
+        <ul className="grid gap-3">
+          {comercios.map((c) => (
+            <li key={c.id}>
+              <FilaComercio
+                comercio={{
+                  id: c.id,
+                  nombre: c.nombre,
+                  tarifa: c.tarifa,
+                  activo: c.activo,
+                  cadeteFijoId: c.cadete_fijo_id,
+                  tieneAcceso: c.perfil_id !== null,
+                }}
+                cadetes={cadetes ?? []}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}

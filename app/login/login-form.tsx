@@ -46,12 +46,12 @@ export function LoginForm() {
 
       <form action={formAction} className="grid gap-3">
         <label className="grid gap-1.5 text-sm">
-          Email
-          <input name="email" type="email" autoComplete="username" required className={inputClass} />
+          Email o usuario
+          <input name="identificador" autoComplete="username" required className={inputClass} />
         </label>
         <label className="grid gap-1.5 text-sm">
-          Contraseña
-          <input name="password" type="password" autoComplete="current-password" required minLength={6} className={inputClass} />
+          Contraseña o PIN
+          <input name="password" type="password" autoComplete="current-password" required minLength={4} className={inputClass} />
         </label>
         {state.error && <p role="alert" className="text-sm text-[var(--orange)]">{state.error}</p>}
         <button

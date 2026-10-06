@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { AdminNav } from '@/components/app/admin-nav'
 import { AppHeader } from '@/components/app/app-header'
 import { requireRol } from '@/lib/auth/perfil'
 
@@ -13,6 +14,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <AppHeader area="ADMIN" nombre={perfil.nombre} />
+      <div className="mx-auto max-w-5xl px-4 pt-4">
+        <AdminNav />
+      </div>
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
     </div>
   )
