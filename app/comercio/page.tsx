@@ -29,7 +29,10 @@ export default async function ComercioPage() {
     )
   }
 
-  const { data: fechaHoy } = await supabase.rpc('fecha_operativa')
+  const [{ data: fechaHoy }, { data: cadetes }] = await Promise.all([
+    supabase.rpc('fecha_operativa'),
+    supabase.from('cadetes').select('id, nombre').eq('activo', true).order('nombre'),
+  ])
   const { data: envios } = await supabase
     .from('envios')
     .select('id, estado, direccion_destino, tarifa, confirmado, origen, created_at, cadetes(nombre)')
@@ -46,7 +49,7 @@ export default async function ComercioPage() {
         <h1 className="mt-2 text-3xl font-bold tracking-tight">Pedir cadete</h1>
       </header>
 
-      <PedirCadete />
+      <PedirCadete cadetes={cadetes ?? []} />
 
       <section className="grid gap-3">
         <Etiqueta>HOY · {envios?.length ?? 0}</Etiqueta>

@@ -10,6 +10,9 @@ const nuevoEnvioSchema = z.object({
   cadeteId: z.uuid().optional().or(z.literal('')),
   direccionDestino: z.string().trim().min(3, 'Mínimo 3 caracteres').max(160),
   nota: z.string().trim().max(300).optional().or(z.literal('')),
+  // Lo que cobra el cadete por este envío en particular; la base valida que esté
+  // entre 0 y la tarifa (la tarifa la fija el comercio, no se manda desde acá).
+  comision: z.coerce.number().min(0).max(10_000_000),
 })
 
 export type NuevoEnvioState = { estado: 'inicial' } | { estado: 'error'; mensaje: string } | { estado: 'ok' }
@@ -25,6 +28,7 @@ export async function crearEnvioAdmin(_prev: NuevoEnvioState, formData: FormData
     cadete_id: parsed.data.cadeteId || null,
     direccion_destino: parsed.data.direccionDestino,
     nota: parsed.data.nota || null,
+    comision: parsed.data.comision,
     // mensajeria_id y origen los recalcula el trigger según el rol; estos valores son
     // placeholders solo para satisfacer el tipo (son uuid/enum válidos, no se usan).
     mensajeria_id: '00000000-0000-0000-0000-000000000000',
@@ -32,8 +36,9 @@ export async function crearEnvioAdmin(_prev: NuevoEnvioState, formData: FormData
   })
 
   if (error) {
+    const mensaje = error.code === '22023' ? 'La comisión debe estar entre 0 y la tarifa.' : 'No se pudo crear el envío.'
     console.error('[envios] alta desde admin', { code: error.code })
-    return { estado: 'error', mensaje: 'No se pudo crear el envío.' }
+    return { estado: 'error', mensaje }
   }
 
   revalidatePath('/admin')

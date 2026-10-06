@@ -16,7 +16,7 @@ grant insert (mensajeria_id, nombre, telefono, dni, activo) on public.cadetes to
 grant update (nombre, telefono, dni, activo) on public.cadetes to authenticated;
 grant insert (mensajeria_id, nombre, direccion, telefono, tarifa, cadete_fijo_id, activo) on public.comercios to authenticated;
 grant update (nombre, direccion, telefono, tarifa, cadete_fijo_id, activo) on public.comercios to authenticated;
-grant insert (mensajeria_id, comercio_id, cadete_id, origen, estado, tarifa, direccion_destino, nota,
+grant insert (mensajeria_id, comercio_id, cadete_id, origen, estado, tarifa, comision, direccion_destino, nota,
               nombre_contacto, telefono_contacto, direccion_origen) on public.envios to authenticated;
 grant update (cadete_id, estado, tarifa, direccion_destino, nota, nombre_contacto, telefono_contacto,
               direccion_origen, confirmado, lat_retiro, lng_retiro, lat_entrega, lng_entrega) on public.envios to authenticated;
@@ -25,8 +25,10 @@ revoke delete on public.cadetes, public.comercios, public.envios, public.movimie
 
 -- ── cadetes ───────────────────────────────────────────────────────────────
 
+-- El comercio también puede ver los cadetes activos (para elegir uno al pedir).
 create policy cadetes_select on public.cadetes for select to authenticated using (
   (mensajeria_id = (select private.mi_mensajeria()) and (select private.mi_rol()) = 'admin')
+  or (mensajeria_id = (select private.mi_mensajeria()) and (select private.mi_rol()) = 'comercio' and activo)
   or perfil_id = (select auth.uid())
 );
 

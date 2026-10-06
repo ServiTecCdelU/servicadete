@@ -32,6 +32,7 @@ language plpgsql security definer set search_path = '' as $$
 declare
   v_rol text := private.rol_app();
   v_comercio public.comercios%rowtype;
+  v_comision_default numeric;
 begin
   new.fecha_operativa := public.fecha_operativa();
   new.created_at := now();
@@ -63,8 +64,9 @@ begin
       if new.comercio_id is null then
         raise exception 'Tu comercio no está activo' using errcode = '42501';
       end if;
-      new.cadete_id := null;
-      new.estado := 'solicitado';
+      -- El cadete es opcional: si el comercio elige uno, el pedido ya queda asignado;
+      -- si no, el de abajo completa con el cadete fijo (si tiene) o queda disponible.
+      new.estado := case when new.cadete_id is null then 'solicitado' else 'asignado' end;
       new.confirmado := true;
     when v_rol = 'admin' then
       new.origen := 'admin';
@@ -77,10 +79,7 @@ begin
       raise exception 'Tu rol no puede crear envíos' using errcode = '42501';
   end case;
 
-  -- Tarifa y comisión las define la base, nunca el cliente.
-  select m.comision_cadete into new.comision
-  from public.mensajerias m where m.id = new.mensajeria_id;
-
+  -- Tarifa: la define la base según el comercio, nunca el cliente.
   if new.comercio_id is not null then
     select * into v_comercio from public.comercios c
     where c.id = new.comercio_id and c.mensajeria_id = new.mensajeria_id and c.activo;
@@ -96,6 +95,20 @@ begin
     end if;
   elsif v_rol is distinct from 'admin' and v_rol is not null then
     new.tarifa := 0;
+  end if;
+
+  -- Comisión: el admin puede fijarla por envío (el formulario la manda siempre,
+  -- precargada con la de la mensajería); cualquier otro rol siempre usa la de la
+  -- mensajería, así el cadete no puede inflarla para deberle menos a la mensajería.
+  select m.comision_cadete into v_comision_default
+  from public.mensajerias m where m.id = new.mensajeria_id;
+
+  if v_rol = 'admin' then
+    if new.comision < 0 or new.comision > new.tarifa then
+      raise exception 'La comisión debe estar entre 0 y la tarifa' using errcode = '22023';
+    end if;
+  else
+    new.comision := v_comision_default;
   end if;
 
   if new.cadete_id is not null and not exists (

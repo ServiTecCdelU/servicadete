@@ -4,7 +4,9 @@ import { useActionState, useState } from 'react'
 import { Aviso, Boton, Campo, inputClass, Tarjeta } from '@/components/app/ui'
 import { pedirCadete, type PedirCadeteState } from './actions'
 
-export function PedirCadete() {
+interface Opcion { id: string; nombre: string }
+
+export function PedirCadete({ cadetes }: { cadetes: Opcion[] }) {
   const [abierto, setAbierto] = useState(false)
   const [ok, setOk] = useState(false)
   const [state, formAction, pending] = useActionState<PedirCadeteState, FormData>(
@@ -40,6 +42,16 @@ export function PedirCadete() {
         <Campo label="Nota (opcional)">
           <input name="nota" maxLength={300} className={inputClass} />
         </Campo>
+        {cadetes.length > 0 && (
+          <Campo label="Cadete (opcional)" hint="Si no elegís uno, lo toma el primero que esté disponible">
+            <select name="cadeteId" className={inputClass}>
+              <option value="">Cualquiera disponible</option>
+              {cadetes.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+          </Campo>
+        )}
 
         {state.estado === 'error' && <Aviso tono="error">{state.mensaje}</Aviso>}
 

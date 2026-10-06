@@ -260,6 +260,69 @@ do $$ begin
   assert (select count(*) from public.envios) = 0, 'mensajería suspendida no ve envíos';
 end $$;
 
+-- ── 11. El comercio elige cadete al pedir (opcional) ──────────────────────
+reset role;
+-- El paso 10 suspendió "test-uno"; se reactiva (como service_role) para seguir probando.
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+update public.mensajerias set activa = true where slug = 'test-uno';
+
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-0000000000b1","role":"authenticated"}', true);
+set local role authenticated;
+
+insert into public.envios (direccion_destino, cadete_id) values
+  ('Destino Elegido 123', '20000000-0000-4000-8000-000000000002');
+do $$ declare r record; begin
+  select * into strict r from public.envios where direccion_destino = 'Destino Elegido 123';
+  assert r.cadete_id = '20000000-0000-4000-8000-000000000002' and r.estado = 'asignado',
+    format('comercio elige cadete al pedir: %s', row_to_json(r));
+end $$;
+
+insert into public.envios (direccion_destino) values ('Destino Sin Elegir 123');
+do $$ declare r record; begin
+  select * into strict r from public.envios where direccion_destino = 'Destino Sin Elegir 123';
+  assert r.cadete_id is null and r.estado = 'solicitado', 'sin elegir cadete, sigue disponible para cualquiera';
+end $$;
+
+do $$ begin
+  begin
+    insert into public.envios (direccion_destino, cadete_id) values ('Destino Invalido', '99999999-0000-4000-8000-000000000000');
+    raise exception 'NO_FALLO';
+  exception when others then
+    if sqlerrm = 'NO_FALLO' then raise exception 'no debería poder asignar un cadete inexistente'; end if;
+  end;
+end $$;
+
+-- ── 12. El admin puede fijar la comisión al crear el envío; nadie más ─────
+reset role;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-0000000000a1","role":"authenticated"}', true);
+set local role authenticated;
+
+insert into public.envios (comercio_id, direccion_destino, comision) values
+  ('30000000-0000-4000-8000-000000000001', 'Destino Comision 123', 2000);
+do $$ declare r record; begin
+  select * into strict r from public.envios where direccion_destino = 'Destino Comision 123';
+  assert r.comision = 2000 and r.tarifa = 3000, format('admin fija comisión: %s', row_to_json(r));
+end $$;
+
+do $$ begin
+  begin
+    insert into public.envios (comercio_id, direccion_destino, comision) values
+      ('30000000-0000-4000-8000-000000000001', 'Destino Comision Invalida', 5000);
+    raise exception 'NO_FALLO';
+  exception when others then
+    if sqlerrm = 'NO_FALLO' then raise exception 'la comisión no debería poder superar la tarifa'; end if;
+  end;
+end $$;
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-0000000000b1","role":"authenticated"}', true);
+set local role authenticated;
+insert into public.envios (direccion_destino, comision) values ('Destino Comision Comercio 123', 9999999);
+do $$ declare r record; begin
+  select * into strict r from public.envios where direccion_destino = 'Destino Comision Comercio 123';
+  assert r.comision = 1700, format('el comercio no puede alterar la comisión: %s', row_to_json(r));
+end $$;
+
 reset role;
 select 'TODOS LOS TESTS PASARON' as resultado;
 rollback;

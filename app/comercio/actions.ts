@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server'
 const pedidoSchema = z.object({
   direccionDestino: z.string().trim().min(3, 'Mínimo 3 caracteres').max(160),
   nota: z.string().trim().max(300).optional().or(z.literal('')),
+  cadeteId: z.uuid().optional().or(z.literal('')),
 })
 
 export type PedirCadeteState = { estado: 'inicial' } | { estado: 'error'; mensaje: string } | { estado: 'ok' }
@@ -22,6 +23,7 @@ export async function pedirCadete(_prev: PedirCadeteState, formData: FormData): 
   const { error } = await supabase.from('envios').insert({
     direccion_destino: parsed.data.direccionDestino,
     nota: parsed.data.nota || null,
+    cadete_id: parsed.data.cadeteId || null,
     mensajeria_id: '00000000-0000-0000-0000-000000000000',
     origen: 'comercio',
   })

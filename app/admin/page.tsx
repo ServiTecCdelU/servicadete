@@ -13,11 +13,12 @@ export default async function AdminHoyPage() {
   const mensajeriaId = perfil.mensajeriaId as string
   const supabase = await createClient()
 
-  const [{ data: kpis }, { data: fechaHoy }, { data: comercios }, { data: cadetes }] = await Promise.all([
+  const [{ data: kpis }, { data: fechaHoy }, { data: comercios }, { data: cadetes }, { data: mensajeria }] = await Promise.all([
     supabase.rpc('kpis_hoy').single(),
     supabase.rpc('fecha_operativa'),
-    supabase.from('comercios').select('id, nombre').eq('activo', true).order('nombre'),
+    supabase.from('comercios').select('id, nombre, tarifa').eq('activo', true).order('nombre'),
     supabase.from('cadetes').select('id, nombre').eq('activo', true).order('nombre'),
+    supabase.from('mensajerias').select('comision_cadete').eq('id', mensajeriaId).single(),
   ])
 
   const { data: envios } = await supabase
@@ -44,7 +45,7 @@ export default async function AdminHoyPage() {
           <Etiqueta>HOY</Etiqueta>
           <h1 className="mt-2 text-3xl font-bold tracking-tight">Tu operación</h1>
         </div>
-        <NuevoEnvio comercios={comercios ?? []} cadetes={cadetes ?? []} />
+        <NuevoEnvio comercios={comercios ?? []} cadetes={cadetes ?? []} comisionDefault={mensajeria?.comision_cadete ?? 0} />
       </header>
 
       <div className="grid grid-cols-3 gap-3">
