@@ -13,6 +13,37 @@ const gastoSchema = z.object({
 
 export type GastoState = { estado: 'inicial' } | { estado: 'error'; mensaje: string } | { estado: 'ok' }
 
+const fechaSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+
+export type DiaEspecificoState =
+  | { estado: 'inicial' }
+  | { estado: 'error'; mensaje: string }
+  | {
+      estado: 'ok'
+      fecha: string
+      envios: number
+      entregados: number
+      facturado: number
+      comisiones: number
+      gastos: number
+      ganancia: number
+    }
+
+export async function consultarDia(_prev: DiaEspecificoState, formData: FormData): Promise<DiaEspecificoState> {
+  await requireRol('admin')
+  const parsed = fechaSchema.safeParse(formData.get('fecha'))
+  if (!parsed.success) return { estado: 'error', mensaje: 'Elegí una fecha.' }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('metricas_dia', { p_fecha: parsed.data }).single()
+  if (error || !data) {
+    console.error('[metricas] consultar día', error)
+    return { estado: 'error', mensaje: 'No se pudo consultar esa fecha.' }
+  }
+
+  return { estado: 'ok', ...data }
+}
+
 export async function registrarGasto(_prev: GastoState, formData: FormData): Promise<GastoState> {
   await requireRol('admin')
   const parsed = gastoSchema.safeParse(Object.fromEntries(formData))

@@ -451,6 +451,19 @@ export type Database = {
           slug: string
         }[]
       }
+      metricas_dia: {
+        Args: { p_fecha: string }
+        Returns: {
+          cancelados: number
+          comisiones: number
+          entregados: number
+          envios: number
+          facturado: number
+          fecha: string
+          ganancia: number
+          gastos: number
+        }[]
+      }
       metricas_diarias: {
         Args: { p_dias?: number }
         Returns: {
