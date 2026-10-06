@@ -24,6 +24,10 @@ No hay scripts de lint ni tests todavía. `next.config.mjs` tiene `typescript.ig
 
 Next.js 16 (App Router) · React 19 · Tailwind 4 (vía `@tailwindcss/postcss`, sin `tailwind.config`) · shadcn estilo `base-nova` sobre `@base-ui/react` · framer-motion · lucide-react · pnpm. Alias `@/*` → raíz. A agregar: `@supabase/ssr` + `@supabase/supabase-js`.
 
+## basePath `/servicadete`
+
+La app se sirve en `servitec.net.ar/servicadete`. `next.config.mjs` define `basePath` desde `NEXT_PUBLIC_BASE_PATH` (default `/servicadete`) y lo reexpone al cliente. Next lo agrega solo en `<Link>`, `redirect()` y el router. Hay que usar `withBasePath()` de `lib/base-path.ts` en `<a href>` armados a mano, en `redirectTo` de OAuth, en los íconos de metadata y en los redirects de route handlers. `next start` responde 404 en `/`; la app está en `/servicadete`.
+
 ## Landing (no tocar)
 
 - `app/page.tsx` es un único client component con toda la landing. **No modificar su diseño**; el único cambio permitido es un botón "Ingresar" en la navbar que lleve a `/login`.

@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { loginConPassword, type LoginState } from '@/app/auth/actions'
+import { withBasePath } from '@/lib/base-path'
 import { createClient } from '@/lib/supabase/client'
 
 const inputClass =
@@ -17,7 +18,7 @@ export function LoginForm() {
     setGoogleError(null)
     const { error } = await createClient().auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: `${window.location.origin}${withBasePath('/auth/callback')}` },
     })
     // Si no hay error, el navegador ya está navegando a Google.
     if (error) {

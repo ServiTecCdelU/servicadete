@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { salir } from '@/app/auth/actions'
 import { getPerfilActual } from '@/lib/auth/perfil'
@@ -24,10 +25,10 @@ export default async function LoginPage({
   return (
     <main className="grid min-h-dvh place-items-center bg-background px-4 py-10 text-foreground">
       <div className="w-full max-w-sm">
-        <a href="/" className="mb-8 flex items-center justify-center gap-2 text-lg font-extrabold tracking-tight">
+        <Link href="/" className="mb-8 flex items-center justify-center gap-2 text-lg font-extrabold tracking-tight">
           <span className="inline-block size-2.5 rounded-full bg-primary shadow-[0_0_18px_var(--lime)]" />
           ServiCadete
-        </a>
+        </Link>
 
         <section className="rounded-xl border border-border bg-[var(--panel)] p-6 shadow-[0_24px_70px_rgba(0,0,0,.25)]">
           {data?.claims.sub ? (
