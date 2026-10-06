@@ -140,3 +140,5 @@ function ResumenGanancia({ titulo, datos }: { titulo: string; datos?: { ganancia
     </Tarjeta>
   )
 }
+
+
