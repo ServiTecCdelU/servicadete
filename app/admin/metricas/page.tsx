@@ -1,7 +1,6 @@
 import { Etiqueta, Tarjeta } from '@/components/app/ui'
-import { formatMonto } from '@/lib/format'
 import { createClient } from '@/lib/supabase/server'
-import { DashboardPeriodo } from './dashboard-periodo'
+import { DashboardPremium, type FilaMetrica } from './dashboard-premium'
 import { DiaEspecifico } from './dia-especifico'
 import { RegistrarGasto } from './registrar-gasto'
 
@@ -21,16 +20,43 @@ export default async function MetricasPage() {
       supabase.rpc('fecha_operativa'),
     ])
 
-  const hoy = diarias?.[0]
-  const estaSemana = semanales?.[0]
-  const esteMes = mensuales?.[0]
+  const dia: FilaMetrica[] = (diarias ?? []).map((d) => ({
+    etiqueta: fmtFecha(d.fecha),
+    envios: Number(d.envios ?? 0),
+    entregados: Number(d.entregados ?? 0),
+    facturado: Number(d.facturado ?? 0),
+    comisiones: Number(d.comisiones ?? 0),
+    gastos: Number(d.gastos ?? 0),
+    ganancia: Number(d.ganancia ?? 0),
+  }))
+
+  const semana: FilaMetrica[] = (semanales ?? []).map((s) => ({
+    etiqueta: `${fmtFecha(s.semana_inicio)}–${fmtFecha(s.semana_fin)}`,
+    envios: Number(s.envios ?? 0),
+    entregados: Number(s.entregados ?? 0),
+    facturado: Number(s.facturado ?? 0),
+    comisiones: Number(s.comisiones ?? 0),
+    gastos: Number(s.gastos ?? 0),
+    ganancia: Number(s.ganancia ?? 0),
+  }))
+
+  const mes: FilaMetrica[] = (mensuales ?? []).map((m) => ({
+    etiqueta: fmtMes(m.mes),
+    envios: Number(m.envios ?? 0),
+    entregados: Number(m.entregados ?? 0),
+    facturado: Number(m.facturado ?? 0),
+    comisiones: Number(m.comisiones ?? 0),
+    gastos: Number(m.gastos ?? 0),
+    ganancia: Number(m.ganancia ?? 0),
+  }))
 
   return (
-    <div className="grid gap-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
+    <div className="grid gap-7 pb-10 sm:gap-8">
+      <header className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <Etiqueta>DASHBOARD</Etiqueta>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">Ganancia y operación</h1>
+          <Etiqueta>DASHBOARD · ADMIN</Etiqueta>
+          <h1 className="mt-2 text-3xl font-bold tracking-[-.05em] sm:text-4xl">Ganancia y operación</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">Todo lo importante para saber cómo está funcionando la mensajería.</p>
         </div>
         <RegistrarGasto />
       </header>
@@ -41,74 +67,31 @@ export default async function MetricasPage() {
         </Tarjeta>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <ResumenGanancia titulo="HOY" datos={hoy} />
-            <ResumenGanancia titulo="ESTA SEMANA" datos={estaSemana} />
-            <ResumenGanancia titulo="ESTE MES" datos={esteMes} />
-          </div>
+          <DashboardPremium
+            dia={dia}
+            semana={semana}
+            mes={mes}
+            ranking={(ranking ?? []).map((r) => ({
+              nombre: r.nombre,
+              envios: Number(r.envios ?? 0),
+              entregados: Number(r.entregados ?? 0),
+              facturado: Number(r.facturado ?? 0),
+            }))}
+          />
 
-          <Tarjeta>
-            <DashboardPeriodo
-              dia={(diarias ?? []).map((d) => ({ etiqueta: fmtFecha(d.fecha), envios: d.envios, entregados: d.entregados, facturado: d.facturado, comisiones: d.comisiones, gastos: d.gastos, ganancia: d.ganancia }))}
-              semana={(semanales ?? []).map((s) => ({ etiqueta: `${fmtFecha(s.semana_inicio)}–${fmtFecha(s.semana_fin)}`, envios: s.envios, entregados: s.entregados, facturado: s.facturado, comisiones: s.comisiones, gastos: s.gastos, ganancia: s.ganancia }))}
-              mes={(mensuales ?? []).map((m) => ({ etiqueta: fmtMes(m.mes), envios: m.envios, entregados: m.entregados, facturado: m.facturado, comisiones: m.comisiones, gastos: m.gastos, ganancia: m.ganancia }))}
-            />
-          </Tarjeta>
-
-          <Tarjeta>
-            <Etiqueta>DÍA ESPECÍFICO</Etiqueta>
+          <Tarjeta className="overflow-hidden p-4 sm:p-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <Etiqueta>DÍA ESPECÍFICO</Etiqueta>
+                <p className="mt-1 text-sm text-[var(--muted)]">Consultá cualquier fecha operativa y revisá su resultado.</p>
+              </div>
+            </div>
             <div className="mt-4">
               <DiaEspecifico hoy={(fechaHoy as unknown as string) ?? ''} />
             </div>
           </Tarjeta>
-
-          <section>
-            <Etiqueta>QUÉ COMERCIO VENDE MÁS (ÚLTIMOS 30 DÍAS)</Etiqueta>
-            <div className="mt-3">
-              {!ranking || ranking.length === 0 ? (
-                <Tarjeta>
-                  <p className="text-sm text-[var(--muted)]">Todavía no hay envíos de comercios en este período.</p>
-                </Tarjeta>
-              ) : (
-                <Tarjeta>
-                  <div className="grid gap-2.5">
-                    {ranking.map((r, i) => {
-                      const valor = Number(r.facturado ?? 0)
-                      const max = Math.max(1, ...ranking.map((item) => Number(item.facturado ?? 0)))
-                      return (
-                        <div key={i} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-sm">
-                          <div className="min-w-0">
-                            <p className="truncate">{r.nombre}</p>
-                            <div className="mt-1 h-3 w-full overflow-hidden rounded-full bg-[var(--panel-2)]">
-                              <div
-                                className="h-full rounded-full"
-                                style={{ width: `${Math.max(2, (valor / max) * 100)}%`, background: '#8a9c1e' }}
-                              />
-                            </div>
-                          </div>
-                          <span className="whitespace-nowrap text-right tabular-nums text-[var(--muted)]">{formatMonto(valor)}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </Tarjeta>
-              )}
-            </div>
-          </section>
         </>
       )}
     </div>
-  )
-}
-
-function ResumenGanancia({ titulo, datos }: { titulo: string; datos?: { ganancia: number; envios: number } }) {
-  return (
-    <Tarjeta className="p-4 text-center">
-      <p className={`text-2xl font-bold tabular-nums sm:text-3xl ${(datos?.ganancia ?? 0) >= 0 ? 'text-primary' : 'text-[var(--orange)]'}`}>
-        {formatMonto(datos?.ganancia ?? 0)}
-      </p>
-      <p className="mt-1 text-[10px] tracking-[.16em] text-[var(--muted)]">GANANCIA · {titulo}</p>
-      <p className="mt-1 text-xs text-[var(--muted)]">{datos?.envios ?? 0} envíos</p>
-    </Tarjeta>
   )
 }
