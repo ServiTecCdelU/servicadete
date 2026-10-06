@@ -19,6 +19,7 @@ const mensajeriaSchema = z.object({
   comisionCadete: z.coerce.number().min(0).max(10_000_000),
   diaInicioSemana: z.coerce.number().int().min(1).max(7),
   logoUrl: z.url('URL inválida').trim().optional().or(z.literal('')),
+  eslogan: z.string().trim().max(140).optional().or(z.literal('')),
 })
 
 type Campos = keyof z.infer<typeof mensajeriaSchema>
@@ -46,6 +47,7 @@ export async function actualizarMensajeria(_prev: MensajeriaState, formData: For
       comision_cadete: parsed.data.comisionCadete,
       dia_inicio_semana: parsed.data.diaInicioSemana,
       logo_url: parsed.data.logoUrl || null,
+      eslogan: parsed.data.eslogan || null,
     })
     .eq('id', perfil.mensajeriaId as string)
 

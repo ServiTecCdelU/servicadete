@@ -2,10 +2,18 @@
 
 import { useActionState } from 'react'
 import { Aviso, Boton, Campo, inputClass } from '@/components/app/ui'
+import { withBasePath } from '@/lib/base-path'
 import { actualizarMensajeria, type MensajeriaState } from './actions'
 
 interface MensajeriaFormProps {
-  mensajeria: { nombre: string; slug: string; comisionCadete: number; diaInicioSemana: number; logoUrl: string | null }
+  mensajeria: {
+    nombre: string
+    slug: string
+    comisionCadete: number
+    diaInicioSemana: number
+    logoUrl: string | null
+    eslogan: string | null
+  }
 }
 
 const DIAS = [
@@ -21,7 +29,7 @@ export function MensajeriaForm({ mensajeria }: MensajeriaFormProps) {
       <Campo label="Nombre" error={errores.nombre}>
         <input name="nombre" defaultValue={mensajeria.nombre} required maxLength={80} className={inputClass} />
       </Campo>
-      <Campo label="Dirección pública" error={errores.slug} hint="servitec.net.ar/servicadete/tu-slug">
+      <Campo label="Dirección pública" error={errores.slug} hint={`servitec.net.ar${withBasePath('/')}tu-slug`}>
         <input name="slug" defaultValue={mensajeria.slug} required maxLength={40} className={inputClass} />
       </Campo>
       <Campo label="Comisión del cadete por envío" error={errores.comisionCadete} hint="Default al crear un envío; el admin puede cambiarla envío por envío">
@@ -37,6 +45,15 @@ export function MensajeriaForm({ mensajeria }: MensajeriaFormProps) {
       <div className="sm:col-span-2">
         <Campo label="Logo (URL, opcional)" error={errores.logoUrl}>
           <input name="logoUrl" type="url" defaultValue={mensajeria.logoUrl ?? ''} placeholder="https://…" maxLength={500} className={inputClass} />
+        </Campo>
+      </div>
+      <div className="sm:col-span-2">
+        <Campo
+          label="Eslogan de tu página pública (opcional)"
+          error={errores.eslogan}
+          hint={`Se muestra en servitec.net.ar${withBasePath('/')}${mensajeria.slug}`}
+        >
+          <input name="eslogan" defaultValue={mensajeria.eslogan ?? ''} maxLength={140} placeholder="Tu pedido, en camino en minutos" className={inputClass} />
         </Campo>
       </div>
 

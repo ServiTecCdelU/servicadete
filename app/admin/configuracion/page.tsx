@@ -11,7 +11,7 @@ export default async function ConfiguracionPage() {
   const [{ data: mensajeria }, { data: claims }] = await Promise.all([
     supabase
       .from('mensajerias')
-      .select('nombre, slug, comision_cadete, dia_inicio_semana, logo_url')
+      .select('nombre, slug, comision_cadete, dia_inicio_semana, logo_url, eslogan')
       .eq('id', perfil.mensajeriaId as string)
       .single(),
     supabase.auth.getClaims(),
@@ -42,6 +42,7 @@ export default async function ConfiguracionPage() {
                 comisionCadete: mensajeria.comision_cadete,
                 diaInicioSemana: mensajeria.dia_inicio_semana,
                 logoUrl: mensajeria.logo_url,
+                eslogan: mensajeria.eslogan,
               }}
             />
           </div>

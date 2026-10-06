@@ -273,6 +273,7 @@ export type Database = {
           comision_cadete: number
           created_at: string
           dia_inicio_semana: number
+          eslogan: string | null
           id: string
           logo_url: string | null
           nombre: string
@@ -283,6 +284,7 @@ export type Database = {
           comision_cadete?: number
           created_at?: string
           dia_inicio_semana?: number
+          eslogan?: string | null
           id?: string
           logo_url?: string | null
           nombre: string
@@ -293,6 +295,7 @@ export type Database = {
           comision_cadete?: number
           created_at?: string
           dia_inicio_semana?: number
+          eslogan?: string | null
           id?: string
           logo_url?: string | null
           nombre?: string
@@ -436,6 +439,7 @@ export type Database = {
       mensajeria_publica: {
         Args: { p_slug: string }
         Returns: {
+          eslogan: string
           logo_url: string
           nombre: string
         }[]

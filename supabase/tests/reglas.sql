@@ -364,6 +364,23 @@ do $$ begin
   end;
 end $$;
 
+-- ── 14. Landing pública y seguimiento ─────────────────────────────────────
+reset role;
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+set local role anon;
+
+do $$ declare r record; begin
+  select * into strict r from public.mensajeria_publica('test-uno');
+  assert r.nombre = 'Test Uno', format('mensajeria_publica: %s', row_to_json(r));
+  assert (select count(*) from public.mensajeria_publica('no-existe')) = 0, 'mensajería inexistente: sin filas';
+end $$;
+
+do $$ declare v_id uuid; r record; begin
+  v_id := public.crear_envio_publico('test-uno', 'Ana Pública', '3411234567', 'Mitre 100', 'Belgrano 200', 'Timbre B');
+  select * into strict r from public.seguimiento_envio(v_id);
+  assert r.estado = 'solicitado' and r.mensajeria_nombre = 'Test Uno', format('seguimiento: %s', row_to_json(r));
+end $$;
+
 reset role;
 select 'TODOS LOS TESTS PASARON' as resultado;
 rollback;
