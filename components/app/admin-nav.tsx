@@ -7,9 +7,10 @@ import { cn } from '@/lib/utils'
 
 const ITEMS = [
   { href: '/admin', label: 'Hoy' },
+  { href: '/admin/historial', label: 'Historial' },
   { href: '/admin/cadetes', label: 'Cadetes' },
   { href: '/admin/comercios', label: 'Comercios' },
-  { href: '/admin/liquidacion', label: 'Liquidación' },
+  { href: '/admin/liquidacion', label: 'Pagos' },
   { href: '/admin/metricas', label: 'Dashboard' },
   { href: '/admin/configuracion', label: 'Configuración' },
 ]

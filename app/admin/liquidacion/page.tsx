@@ -34,7 +34,7 @@ export default async function LiquidacionPage({
     <div className="grid gap-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <Etiqueta>LIQUIDACIÓN</Etiqueta>
+          <Etiqueta>PAGOS A CADETES</Etiqueta>
           <h1 className="mt-2 text-3xl font-bold tracking-tight">
             {new Date(`${desde}T12:00:00Z`).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
             {' – '}

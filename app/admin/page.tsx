@@ -1,9 +1,11 @@
+import Link from 'next/link'
 import { RealtimeRefresh } from '@/components/app/realtime-refresh'
-import { Etiqueta, Tarjeta } from '@/components/app/ui'
+import { Boton, Etiqueta, Tarjeta } from '@/components/app/ui'
 import { requireRol } from '@/lib/auth/perfil'
 import { formatMonto } from '@/lib/format'
 import { createClient } from '@/lib/supabase/server'
 import { EnvioCard, type EnvioRow } from './envio-card'
+import { ExportarEnviosCsv } from './exportar-envios-csv'
 import { NuevoEnvio } from './nuevo-envio'
 
 const ORDEN_ESTADO = ['solicitado', 'asignado', 'retirado', 'entregado', 'cancelado']
@@ -76,7 +78,15 @@ export default async function AdminHoyPage() {
       )}
 
       <section className="grid gap-3">
-        <Etiqueta>ENVÍOS DE HOY · {resto.length}</Etiqueta>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Etiqueta>ENVÍOS DE HOY · {resto.length}</Etiqueta>
+          <div className="flex flex-wrap items-center gap-2">
+            <ExportarEnviosCsv filas={enviosOrdenados} etiquetaFecha={fechaHoy as unknown as string} />
+            <Link href="/admin/historial">
+              <Boton type="button" variante="secundario" className="h-10 px-4 text-sm">Ver historial</Boton>
+            </Link>
+          </div>
+        </div>
         {resto.length === 0 ? (
           <Tarjeta>
             <p className="text-sm text-[var(--muted)]">Todavía no hay envíos hoy.</p>
