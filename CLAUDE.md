@@ -33,7 +33,7 @@ Next.js 16 (App Router) · React 19 · Tailwind 4 (vía `@tailwindcss/postcss`, 
 ## Arquitectura objetivo (multi-tenant sobre Supabase)
 
 - Tenant = `mensajerias`. Todas las tablas llevan `mensajeria_id` y tienen **RLS** que filtra según `perfiles` (`user_id` → `mensajeria_id`, `rol`). Roles: `superadmin | admin | cadete | comercio`.
-- Migraciones SQL en `supabase/migrations/` (las corre el usuario, no ejecutarlas).
+- Migraciones SQL en `supabase/migrations/`. Se aplican con la Management API usando `SUPABASE_ACCESS_TOKEN` y `SUPABASE_PROJECT_REF` de `.env.local`: `POST https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query` con `{"query": "..."}`. El token vence alrededor del 2027-01-04. La app nunca debe usarlo.
 - Rutas: `/login` único que redirige por rol → `/superadmin`, `/admin`, `/cadete` (PWA), `/comercio`; pública `/[slug]` (pedido de particulares) y `/[slug]/envio/[id]` (seguimiento). Middleware protege por rol.
 - Clientes Supabase: servidor y navegador con `@supabase/ssr`. `SUPABASE_SECRET_KEY` **solo** en server actions (alta de cadetes/comercios con usuario + PIN de 6 dígitos y email interno `usuario@slug.servicadete.local`). Env en `.env.local`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`. Se usan las claves nuevas de Supabase (publishable/secret), que cumplen el rol de anon/service_role que nombra la spec.
 - Auth solo email + contraseña; **nada de magic links** (cupo de email gratuito muy bajo).
