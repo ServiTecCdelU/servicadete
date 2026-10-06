@@ -8,7 +8,7 @@ export default async function ComerciosPage() {
   const [{ data: comercios, error }, { data: cadetes }] = await Promise.all([
     supabase
       .from('comercios')
-      .select('id, nombre, tarifa, activo, cadete_fijo_id, perfil_id')
+      .select('id, nombre, direccion, telefono, tarifa, activo, cadete_fijo_id, perfil_id')
       .order('activo', { ascending: false })
       .order('nombre'),
     supabase.from('cadetes').select('id, nombre').eq('activo', true).order('nombre'),
@@ -42,6 +42,8 @@ export default async function ComerciosPage() {
                 comercio={{
                   id: c.id,
                   nombre: c.nombre,
+                  direccion: c.direccion,
+                  telefono: c.telefono,
                   tarifa: c.tarifa,
                   activo: c.activo,
                   cadeteFijoId: c.cadete_fijo_id,

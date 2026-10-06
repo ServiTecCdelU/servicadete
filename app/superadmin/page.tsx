@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Boton, Etiqueta, Tarjeta } from '@/components/app/ui'
 import { createClient } from '@/lib/supabase/server'
 import { cambiarEstadoMensajeria } from './actions'
+import { CambiarPasswordAdmin } from './cambiar-password-admin'
 import { NuevaMensajeria } from './nueva-mensajeria'
 
 export default async function SuperadminPage() {
@@ -65,6 +66,8 @@ export default async function SuperadminPage() {
                     {m.activa ? 'Suspender' : 'Activar'}
                   </Boton>
                 </form>
+
+                <CambiarPasswordAdmin mensajeriaId={m.id} />
               </Tarjeta>
             </li>
           ))}

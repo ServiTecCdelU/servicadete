@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { crearUsuarioInterno } from '@/lib/auth/crear-usuario-interno'
+import { cambiarCredencial, crearUsuarioInterno } from '@/lib/auth/crear-usuario-interno'
 import { requireRol } from '@/lib/auth/perfil'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -93,12 +93,81 @@ export async function actualizarComercio(formData: FormData): Promise<void> {
   revalidatePath('/admin/comercios')
 }
 
+const editarDatosSchema = z.object({
+  id: z.uuid(),
+  nombre: z.string().trim().min(2, 'Mínimo 2 caracteres').max(80),
+  direccion: z.string().trim().max(160).optional().or(z.literal('')),
+  telefono: z.string().trim().max(30).optional().or(z.literal('')),
+})
+
+export type EditarComercioState = { error: string | null }
+
+export async function actualizarDatosComercio(_prev: EditarComercioState, formData: FormData): Promise<EditarComercioState> {
+  const perfil = await requireRol('admin')
+  const parsed = editarDatosSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Revisá los datos.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('comercios')
+    .update({ nombre: parsed.data.nombre, direccion: parsed.data.direccion || null, telefono: parsed.data.telefono || null })
+    .eq('id', parsed.data.id)
+    .eq('mensajeria_id', perfil.mensajeriaId as string)
+
+  if (error) {
+    console.error('[comercios] editar datos', { code: error.code })
+    return { error: 'No se pudo guardar.' }
+  }
+  revalidatePath('/admin/comercios')
+  return { error: null }
+}
+
+const cambiarPinComercioSchema = z.object({
+  comercioId: z.uuid(),
+  pin: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal(''))
+    .refine((v) => !v || /^[0-9]{4,8}$/.test(v), 'El PIN va de 4 a 8 números'),
+})
+
+export type CambiarPinState = { estado: 'inicial' } | { estado: 'error'; mensaje: string } | { estado: 'ok'; pin: string }
+
+export async function cambiarPinComercio(_prev: CambiarPinState, formData: FormData): Promise<CambiarPinState> {
+  const perfil = await requireRol('admin')
+  const parsed = cambiarPinComercioSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return { estado: 'error', mensaje: parsed.error.issues[0]?.message ?? 'PIN inválido.' }
+
+  const supabase = await createClient()
+  const { data: comercio, error: errComercio } = await supabase
+    .from('comercios')
+    .select('perfil_id')
+    .eq('id', parsed.data.comercioId)
+    .eq('mensajeria_id', perfil.mensajeriaId as string)
+    .single()
+  if (errComercio || !comercio.perfil_id) return { estado: 'error', mensaje: 'Ese comercio todavía no tiene acceso.' }
+
+  try {
+    const admin = createAdminClient()
+    const pin = await cambiarCredencial(admin, comercio.perfil_id, parsed.data.pin || undefined)
+    return { estado: 'ok', pin }
+  } catch (err) {
+    console.error('[comercios] cambiar pin', err)
+    return { estado: 'error', mensaje: 'No se pudo cambiar el PIN.' }
+  }
+}
+
 export type AccesoState =
   | { estado: 'inicial' }
   | { estado: 'error'; mensaje: string }
   | { estado: 'ok'; usuario: string; pin: string }
 
-const accesoSchema = z.object({ comercioId: z.uuid(), nombre: z.string().trim().min(2).max(80) })
+const accesoSchema = z.object({
+  comercioId: z.uuid(),
+  nombre: z.string().trim().min(2).max(80),
+  email: z.email('Email inválido').trim().toLowerCase().optional().or(z.literal('')),
+})
 
 export async function generarAccesoComercio(_prev: AccesoState, formData: FormData): Promise<AccesoState> {
   const perfil = await requireRol('admin')
@@ -116,8 +185,11 @@ export async function generarAccesoComercio(_prev: AccesoState, formData: FormDa
   const admin = createAdminClient()
   let creado
   try {
-    creado = await crearUsuarioInterno(admin, parsed.data.nombre, mensajeria.slug)
+    creado = await crearUsuarioInterno(admin, parsed.data.nombre, mensajeria.slug, parsed.data.email || undefined)
   } catch (err) {
+    if (err instanceof Error && err.message === 'EMAIL_EXISTS') {
+      return { estado: 'error', mensaje: 'Ese email ya tiene una cuenta.' }
+    }
     console.error('[comercios] alta de usuario', err)
     return { estado: 'error', mensaje: 'No se pudo generar el usuario.' }
   }

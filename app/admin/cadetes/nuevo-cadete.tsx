@@ -41,6 +41,11 @@ export function NuevoCadete() {
         <Campo label="DNI (opcional)" error={errores.dni}>
           <input name="dni" maxLength={9} inputMode="numeric" className={inputClass} />
         </Campo>
+        <div className="sm:col-span-2">
+          <Campo label="Email (opcional)" error={errores.email} hint="Si lo cargás, también puede entrar con Google además de usuario y PIN">
+            <input name="email" type="email" maxLength={160} className={inputClass} />
+          </Campo>
+        </div>
 
         {state.estado === 'error' && state.mensaje && (
           <div className="sm:col-span-2">

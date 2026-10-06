@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { requireRol } from '@/lib/auth/perfil'
+import { cambiarCredencial } from '@/lib/auth/crear-usuario-interno'
 import { generarPassword } from '@/lib/auth/credenciales'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -115,4 +116,50 @@ export async function cambiarEstadoMensajeria(formData: FormData): Promise<void>
 
   if (error) console.error('[superadmin] cambio de estado', { code: error.code })
   revalidatePath('/superadmin')
+}
+
+const cambiarPasswordSchema = z.object({
+  mensajeriaId: z.uuid(),
+  password: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal(''))
+    .refine((v) => !v || v.length >= 8, 'Mínimo 8 caracteres'),
+})
+
+export type CambiarPasswordState =
+  | { estado: 'inicial' }
+  | { estado: 'error'; mensaje: string }
+  | { estado: 'ok'; email: string; password: string }
+
+export async function cambiarPasswordAdmin(
+  _prev: CambiarPasswordState,
+  formData: FormData,
+): Promise<CambiarPasswordState> {
+  await requireRol('superadmin')
+  const parsed = cambiarPasswordSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return { estado: 'error', mensaje: parsed.error.issues[0]?.message ?? 'Datos inválidos.' }
+
+  const admin = createAdminClient()
+  const { data: perfilAdmin, error: errPerfil } = await admin
+    .from('perfiles')
+    .select('user_id')
+    .eq('mensajeria_id', parsed.data.mensajeriaId)
+    .eq('rol', 'admin')
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  if (errPerfil || !perfilAdmin) return { estado: 'error', mensaje: 'Esa mensajería no tiene un admin todavía.' }
+
+  const { data: usuario, error: errUsuario } = await admin.auth.admin.getUserById(perfilAdmin.user_id)
+  if (errUsuario || !usuario.user.email) return { estado: 'error', mensaje: 'No se pudo encontrar al admin.' }
+
+  try {
+    const password = await cambiarCredencial(admin, perfilAdmin.user_id, parsed.data.password || generarPassword())
+    return { estado: 'ok', email: usuario.user.email, password }
+  } catch (err) {
+    console.error('[superadmin] cambiar contraseña del admin', err)
+    return { estado: 'error', mensaje: 'No se pudo cambiar la contraseña.' }
+  }
 }

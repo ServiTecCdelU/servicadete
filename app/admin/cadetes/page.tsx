@@ -2,6 +2,7 @@ import { Boton, Etiqueta, Tarjeta } from '@/components/app/ui'
 import { formatMonto } from '@/lib/format'
 import { createClient } from '@/lib/supabase/server'
 import { cambiarEstadoCadete } from './actions'
+import { EditarCadete } from './editar-cadete'
 import { NuevoCadete } from './nuevo-cadete'
 import { RendicionForm } from './rendicion-form'
 
@@ -10,7 +11,7 @@ export default async function CadetesPage() {
   // Solo las columnas que se muestran; el saldo viene de la columna mantenida por trigger.
   const { data: cadetes, error } = await supabase
     .from('cadetes')
-    .select('id, nombre, telefono, activo, saldo')
+    .select('id, nombre, telefono, dni, activo, saldo')
     .order('activo', { ascending: false })
     .order('nombre')
 
@@ -59,6 +60,7 @@ export default async function CadetesPage() {
 
                 <div className="flex flex-wrap items-center gap-2">
                   {c.saldo > 0 && <RendicionForm cadeteId={c.id} />}
+                  <EditarCadete cadete={c} />
                   <form action={cambiarEstadoCadete}>
                     <input type="hidden" name="id" value={c.id} />
                     <input type="hidden" name="activo" value={String(!c.activo)} />
