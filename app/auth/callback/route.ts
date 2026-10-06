@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { withBasePath } from '@/lib/base-path'
+import { urlPublica } from '@/lib/site-url'
 import { createClient } from '@/lib/supabase/server'
 
 // Destino del OAuth (Google): canjea el código por la sesión y vuelve a /login,
@@ -7,8 +7,8 @@ import { createClient } from '@/lib/supabase/server'
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code')
 
-  // En route handlers Next no prefija el basePath en redirects: se agrega a mano.
-  const destino = new URL(withBasePath('/login'), request.nextUrl.origin)
+  // URL pública (no la del host interno de Vercel) y con basePath.
+  const destino = urlPublica('/login', request.nextUrl.origin)
 
   if (code) {
     const supabase = await createClient()

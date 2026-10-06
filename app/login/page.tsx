@@ -7,7 +7,10 @@ import { HOME_POR_ROL } from '@/lib/auth/roles'
 import { createClient } from '@/lib/supabase/server'
 import { LoginForm } from './login-form'
 
-export const metadata: Metadata = { title: 'Ingresar — ServiCadete' }
+export const metadata: Metadata = {
+  title: 'Ingresar',
+  robots: { index: false, follow: false },
+}
 
 export default async function LoginPage({
   searchParams,

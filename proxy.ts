@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { rolRequerido } from '@/lib/auth/roles'
+import { urlPublica } from '@/lib/site-url'
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '@/lib/supabase/env'
 
 // Refresca la sesión y hace un chequeo optimista: sin sesión no se entra a las áreas privadas.
@@ -26,10 +27,7 @@ export async function proxy(request: NextRequest) {
   const autenticado = Boolean(data?.claims.sub)
 
   if (!autenticado && rolRequerido(request.nextUrl.pathname)) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    url.search = ''
-    return NextResponse.redirect(url)
+    return NextResponse.redirect(urlPublica('/login', request.nextUrl.origin))
   }
 
   return response

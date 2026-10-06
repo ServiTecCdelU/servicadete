@@ -1,5 +1,11 @@
+import type { Metadata } from 'next'
 import { salir } from '@/app/auth/actions'
 import { requireRol } from '@/lib/auth/perfil'
+
+export const metadata: Metadata = {
+  title: 'Superadmin',
+  robots: { index: false, follow: false },
+}
 
 export default async function SuperadminLayout({ children }: { children: React.ReactNode }) {
   const perfil = await requireRol('superadmin')
