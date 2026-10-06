@@ -1,4 +1,3 @@
-import { BarrasRanking } from '@/components/app/charts'
 import { Etiqueta, Tarjeta } from '@/components/app/ui'
 import { formatMonto } from '@/lib/format'
 import { createClient } from '@/lib/supabase/server'
@@ -10,20 +9,11 @@ const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'o
 const fmtFecha = (iso: string) => { const [, m, d] = iso.split('-'); return `${d}/${m}` }
 const fmtMes = (iso: string) => MESES[Number(iso.split('-')[1]) - 1]
 
-export const dynamic = 'force-dynamic'
-
 export default async function MetricasPage() {
   const supabase = await createClient()
 
-  let diarias: any[] | null = null
-  let semanales: any[] | null = null
-  let mensuales: any[] | null = null
-  let ranking: any[] | null = null
-  let fechaHoy: unknown = null
-  let errDiarias: unknown = null
-
-  try {
-    const resultados = await Promise.all([
+  const [{ data: diarias, error: errDiarias }, { data: semanales }, { data: mensuales }, { data: ranking }, { data: fechaHoy }] =
+    await Promise.all([
       supabase.rpc('metricas_diarias', { p_dias: 14 }),
       supabase.rpc('metricas_semanales', { p_semanas: 8 }),
       supabase.rpc('metricas_mensuales', { p_meses: 6 }),
@@ -31,50 +21,9 @@ export default async function MetricasPage() {
       supabase.rpc('fecha_operativa'),
     ])
 
-    diarias = resultados[0].data
-    errDiarias = resultados[0].error
-    semanales = resultados[1].data
-    mensuales = resultados[2].data
-    ranking = resultados[3].data
-    fechaHoy = resultados[4].data
-  } catch (error) {
-    console.error('[metricas] error al cargar dashboard', error)
-    errDiarias = error
-  }
-
   const hoy = diarias?.[0]
   const estaSemana = semanales?.[0]
   const esteMes = mensuales?.[0]
-
-  const dias = (diarias ?? []).map((d) => ({
-    etiqueta: fmtFecha(String(d.fecha)),
-    envios: Number(d.envios ?? 0),
-    entregados: Number(d.entregados ?? 0),
-    facturado: Number(d.facturado ?? 0),
-    comisiones: Number(d.comisiones ?? 0),
-    gastos: Number(d.gastos ?? 0),
-    ganancia: Number(d.ganancia ?? 0),
-  }))
-
-  const semanas = (semanales ?? []).map((s) => ({
-    etiqueta: `${fmtFecha(String(s.semana_inicio))}–${fmtFecha(String(s.semana_fin))}`,
-    envios: Number(s.envios ?? 0),
-    entregados: Number(s.entregados ?? 0),
-    facturado: Number(s.facturado ?? 0),
-    comisiones: Number(s.comisiones ?? 0),
-    gastos: Number(s.gastos ?? 0),
-    ganancia: Number(s.ganancia ?? 0),
-  }))
-
-  const meses = (mensuales ?? []).map((m) => ({
-    etiqueta: fmtMes(String(m.mes)),
-    envios: Number(m.envios ?? 0),
-    entregados: Number(m.entregados ?? 0),
-    facturado: Number(m.facturado ?? 0),
-    comisiones: Number(m.comisiones ?? 0),
-    gastos: Number(m.gastos ?? 0),
-    ganancia: Number(m.ganancia ?? 0),
-  }))
 
   return (
     <div className="grid gap-8">
@@ -99,7 +48,11 @@ export default async function MetricasPage() {
           </div>
 
           <Tarjeta>
-            <DashboardPeriodo dia={dias} semana={semanas} mes={meses} />
+            <DashboardPeriodo
+              dia={(diarias ?? []).map((d) => ({ etiqueta: fmtFecha(d.fecha), envios: d.envios, entregados: d.entregados, facturado: d.facturado, comisiones: d.comisiones, gastos: d.gastos, ganancia: d.ganancia }))}
+              semana={(semanales ?? []).map((s) => ({ etiqueta: `${fmtFecha(s.semana_inicio)}–${fmtFecha(s.semana_fin)}`, envios: s.envios, entregados: s.entregados, facturado: s.facturado, comisiones: s.comisiones, gastos: s.gastos, ganancia: s.ganancia }))}
+              mes={(mensuales ?? []).map((m) => ({ etiqueta: fmtMes(m.mes), envios: m.envios, entregados: m.entregados, facturado: m.facturado, comisiones: m.comisiones, gastos: m.gastos, ganancia: m.ganancia }))}
+            />
           </Tarjeta>
 
           <Tarjeta>
@@ -118,7 +71,26 @@ export default async function MetricasPage() {
                 </Tarjeta>
               ) : (
                 <Tarjeta>
-                  <BarrasRanking datos={ranking.map((r) => ({ etiqueta: String(r.nombre ?? ''), valor: Number(r.facturado ?? 0) }))} formatValor={formatMonto} />
+                  <div className="grid gap-2.5">
+                    {ranking.map((r, i) => {
+                      const valor = Number(r.facturado ?? 0)
+                      const max = Math.max(1, ...ranking.map((item) => Number(item.facturado ?? 0)))
+                      return (
+                        <div key={i} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-sm">
+                          <div className="min-w-0">
+                            <p className="truncate">{r.nombre}</p>
+                            <div className="mt-1 h-3 w-full overflow-hidden rounded-full bg-[var(--panel-2)]">
+                              <div
+                                className="h-full rounded-full"
+                                style={{ width: `${Math.max(2, (valor / max) * 100)}%`, background: '#8a9c1e' }}
+                              />
+                            </div>
+                          </div>
+                          <span className="whitespace-nowrap text-right tabular-nums text-[var(--muted)]">{formatMonto(valor)}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </Tarjeta>
               )}
             </div>
@@ -133,12 +105,10 @@ function ResumenGanancia({ titulo, datos }: { titulo: string; datos?: { ganancia
   return (
     <Tarjeta className="p-4 text-center">
       <p className={`text-2xl font-bold tabular-nums sm:text-3xl ${(datos?.ganancia ?? 0) >= 0 ? 'text-primary' : 'text-[var(--orange)]'}`}>
-        {formatMonto(Number(datos?.ganancia ?? 0))}
+        {formatMonto(datos?.ganancia ?? 0)}
       </p>
       <p className="mt-1 text-[10px] tracking-[.16em] text-[var(--muted)]">GANANCIA · {titulo}</p>
-      <p className="mt-1 text-xs text-[var(--muted)]">{Number(datos?.envios ?? 0)} envíos</p>
+      <p className="mt-1 text-xs text-[var(--muted)]">{datos?.envios ?? 0} envíos</p>
     </Tarjeta>
   )
 }
-
-
