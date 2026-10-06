@@ -223,6 +223,43 @@ do $$ declare v uuid; begin
   end;
 end $$;
 
+-- ── 10. Superadmin y estado de la mensajería ──────────────────────────────
+reset role;
+insert into auth.users (id, email, aud, role) values
+  ('00000000-0000-4000-8000-0000000000d1', 'super@test.local', 'authenticated', 'authenticated');
+insert into public.perfiles (user_id, mensajeria_id, rol, nombre) values
+  ('00000000-0000-4000-8000-0000000000d1', null, 'superadmin', 'Super');
+
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-0000000000a1","role":"authenticated"}', true);
+set local role authenticated;
+do $$ begin
+  begin
+    update public.mensajerias set activa = false;
+    raise exception 'NO_FALLO';
+  exception when others then
+    if sqlerrm = 'NO_FALLO' then raise exception 'el admin no debería suspender su mensajería'; end if;
+  end;
+end $$;
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-0000000000d1","role":"authenticated"}', true);
+set local role authenticated;
+insert into public.mensajerias (nombre, slug) values ('Prueba SA', 'prueba-sa');
+update public.mensajerias set activa = false where slug = 'test-uno';
+do $$ declare r record; begin
+  select * into strict r from public.mensajerias_con_envios_mes() where slug = 'test-uno';
+  assert not r.activa and r.envios_mes = 5, format('superadmin lista con envíos del mes (2 + 3 particulares): %s', row_to_json(r));
+  assert exists (select 1 from public.mensajerias_con_envios_mes() where slug = 'prueba-sa'), 'superadmin crea';
+end $$;
+
+-- Mensajería suspendida: su gente pierde acceso a los datos.
+reset role;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-0000000000a1","role":"authenticated"}', true);
+set local role authenticated;
+do $$ begin
+  assert (select count(*) from public.envios) = 0, 'mensajería suspendida no ve envíos';
+end $$;
+
 reset role;
 select 'TODOS LOS TESTS PASARON' as resultado;
 rollback;

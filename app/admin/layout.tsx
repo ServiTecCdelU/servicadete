@@ -3,16 +3,16 @@ import { AppHeader } from '@/components/app/app-header'
 import { requireRol } from '@/lib/auth/perfil'
 
 export const metadata: Metadata = {
-  title: 'Superadmin',
+  title: 'Panel',
   robots: { index: false, follow: false },
 }
 
-export default async function SuperadminLayout({ children }: { children: React.ReactNode }) {
-  const perfil = await requireRol('superadmin')
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const perfil = await requireRol('admin')
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      <AppHeader area="SUPERADMIN" nombre={perfil.nombre} />
+      <AppHeader area="ADMIN" nombre={perfil.nombre} />
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
     </div>
   )

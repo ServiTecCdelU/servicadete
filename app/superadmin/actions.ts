@@ -1,0 +1,118 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
+import { requireRol } from '@/lib/auth/perfil'
+import { generarPassword } from '@/lib/auth/credenciales'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
+
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/
+const SLUGS_RESERVADOS = new Set(['login', 'auth', 'admin', 'superadmin', 'cadete', 'comercio', 'api', 'envio'])
+
+const nuevaMensajeriaSchema = z.object({
+  nombre: z.string().trim().min(2, 'Mínimo 2 caracteres').max(80),
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(SLUG_RE, 'Solo minúsculas, números y guiones (3 a 40)')
+    .refine((s) => !SLUGS_RESERVADOS.has(s), 'Ese nombre está reservado'),
+  adminNombre: z.string().trim().min(2, 'Mínimo 2 caracteres').max(80),
+  adminEmail: z.string().trim().toLowerCase().email('Email inválido'),
+})
+
+type Campos = keyof z.infer<typeof nuevaMensajeriaSchema>
+
+export type NuevaMensajeriaState =
+  | { estado: 'inicial' }
+  | { estado: 'error'; mensaje?: string; errores?: Partial<Record<Campos, string>> }
+  | { estado: 'ok'; nombre: string; email: string; password: string }
+
+export async function crearMensajeria(
+  _prev: NuevaMensajeriaState,
+  formData: FormData,
+): Promise<NuevaMensajeriaState> {
+  await requireRol('superadmin')
+
+  const parsed = nuevaMensajeriaSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) {
+    const errores: Partial<Record<Campos, string>> = {}
+    for (const issue of parsed.error.issues) {
+      const campo = issue.path[0] as Campos
+      errores[campo] ??= issue.message
+    }
+    return { estado: 'error', errores }
+  }
+  const { nombre, slug, adminNombre, adminEmail } = parsed.data
+
+  // La mensajería se crea con la sesión del superadmin (RLS); el usuario admin, con la secret key.
+  const supabase = await createClient()
+  const { data: mensajeria, error: errMensajeria } = await supabase
+    .from('mensajerias')
+    .insert({ nombre, slug })
+    .select('id')
+    .single()
+
+  if (errMensajeria) {
+    if (errMensajeria.code === '23505') return { estado: 'error', errores: { slug: 'Ese slug ya está en uso' } }
+    console.error('[superadmin] alta de mensajería', { code: errMensajeria.code })
+    return { estado: 'error', mensaje: 'No se pudo crear la mensajería.' }
+  }
+
+  const admin = createAdminClient()
+  const password = generarPassword()
+  const { data: creado, error: errUsuario } = await admin.auth.admin.createUser({
+    email: adminEmail,
+    password,
+    email_confirm: true,
+    user_metadata: { nombre: adminNombre },
+  })
+
+  if (errUsuario || !creado.user) {
+    await admin.from('mensajerias').delete().eq('id', mensajeria.id)
+    if (errUsuario?.code === 'email_exists') {
+      return { estado: 'error', errores: { adminEmail: 'Ese email ya tiene una cuenta' } }
+    }
+    console.error('[superadmin] alta de usuario admin', { code: errUsuario?.code })
+    return { estado: 'error', mensaje: 'No se pudo crear el usuario administrador.' }
+  }
+
+  const { error: errPerfil } = await admin.from('perfiles').insert({
+    user_id: creado.user.id,
+    mensajeria_id: mensajeria.id,
+    rol: 'admin',
+    nombre: adminNombre,
+  })
+
+  if (errPerfil) {
+    await admin.auth.admin.deleteUser(creado.user.id)
+    await admin.from('mensajerias').delete().eq('id', mensajeria.id)
+    console.error('[superadmin] alta de perfil admin', { code: errPerfil.code })
+    return { estado: 'error', mensaje: 'No se pudo crear el perfil del administrador.' }
+  }
+
+  revalidatePath('/superadmin')
+  return { estado: 'ok', nombre, email: adminEmail, password }
+}
+
+const cambiarEstadoSchema = z.object({
+  id: z.uuid(),
+  activa: z.enum(['true', 'false']).transform((v) => v === 'true'),
+})
+
+export async function cambiarEstadoMensajeria(formData: FormData): Promise<void> {
+  await requireRol('superadmin')
+
+  const parsed = cambiarEstadoSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('mensajerias')
+    .update({ activa: parsed.data.activa })
+    .eq('id', parsed.data.id)
+
+  if (error) console.error('[superadmin] cambio de estado', { code: error.code })
+  revalidatePath('/superadmin')
+}

@@ -33,4 +33,4 @@
 
 
 
-necesito que el login funcione asi
+necesito que el login funcione asi y que solo funcione por google
