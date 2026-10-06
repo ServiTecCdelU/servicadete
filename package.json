@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "db:query": "node --env-file=.env.local scripts/db-query.mjs"
+    "db:query": "node --env-file=.env.local scripts/db-query.mjs",
+    "db:types": "node --env-file=.env.local scripts/db-types.mjs",
+    "db:test": "node --env-file=.env.local scripts/db-query.mjs supabase/tests/reglas.sql"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
