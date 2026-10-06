@@ -29,7 +29,7 @@ Next.js 16 (App Router) · React 19 · Tailwind 4 (vía `@tailwindcss/postcss`, 
 La app se sirve en `servitec.net.ar/servicadete`. `next.config.mjs` define `basePath` desde `NEXT_PUBLIC_BASE_PATH` (default `/servicadete`) y lo reexpone al cliente. Next lo agrega solo en `<Link>`, `redirect()` y el router. Hay que usar `withBasePath()` de `lib/base-path.ts` en `<a href>` armados a mano, en `redirectTo` de OAuth, en los íconos de metadata y en los redirects de route handlers. `next start` responde 404 en `/`; la app está en `/servicadete`.
 
 En producción, el proyecto de ServiTec (servitec.net.ar) hace un *rewrite* externo hacia el deploy de Vercel de este proyecto. Por eso el `Host` del request es `*.vercel.app` y no el dominio público:
-- Los redirects absolutos (route handlers y `proxy.ts`) se arman con `urlPublica()` de `lib/site-url.ts`, que usa `NEXT_PUBLIC_SITE_URL`. En Vercel vale `https://servitec.net.ar/servicadete` y en local `http://localhost:3000/servicadete`. Es `NEXT_PUBLIC_*`, así que se fija en el build.
+- Los redirects absolutos (route handlers y `proxy.ts`) se arman con `urlPublica()` de `lib/site-url.ts`, que usa `NEXT_PUBLIC_SITE_URL`. En Vercel vale `https://www.servitec.net.ar/servicadete` (el dominio sin www redirige a www) y en local `http://localhost:3000/servicadete`. Es `NEXT_PUBLIC_*`, así que se fija en el build.
 - `experimental.serverActions.allowedOrigins` incluye servitec.net.ar; sin eso, las server actions se abortan por diferencia entre `Origin` y `Host`.
 - `metadataBase` es `SITE_URL` (con basePath). Las URLs relativas de metadata se resuelven contra esa base.
 - `robots.txt` lo lee el buscador en la raíz del dominio, no acá. Las áreas privadas usan `robots: noindex` en su metadata.
