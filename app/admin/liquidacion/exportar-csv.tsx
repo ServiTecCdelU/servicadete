@@ -11,7 +11,7 @@ interface Fila {
 }
 
 function aCsv(filas: Fila[]): string {
-  const encabezado = ['Cadete', 'Envíos', 'A rendir', 'Rendido', 'Saldo']
+  const encabezado = ['Cadete', 'Envíos', 'Generado', 'Rendido', 'Saldo']
   const lineas = filas.map((f) => [f.nombre, f.envios, f.a_rendir, f.rendido, f.saldo])
   return [encabezado, ...lineas]
     .map((cols) => cols.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))

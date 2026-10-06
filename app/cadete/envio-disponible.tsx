@@ -23,8 +23,8 @@ export function EnvioDisponible({ envio }: { envio: EnvioDisponibleRow }) {
       {envio.comercios?.direccion && <p className="text-sm text-[var(--muted)]">Retirar en: {envio.comercios.direccion}</p>}
       <p className="mt-1 text-sm">{envio.direccion_destino}</p>
       {envio.nota && <p className="mt-1 text-xs text-[var(--muted)]">Nota: {envio.nota}</p>}
-      <div className="mt-3 flex items-center justify-between gap-3">
-        <p className="text-sm text-primary">Ganás {formatMonto(envio.tarifa - envio.comision)}</p>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="min-w-0 text-sm text-primary">Ganás {formatMonto(envio.tarifa - envio.comision)}</p>
         <form action={formAction}>
           <input type="hidden" name="id" value={envio.id} />
           <Boton disabled={pending} className="h-10 px-4 text-sm">

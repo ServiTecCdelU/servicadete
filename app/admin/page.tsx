@@ -42,24 +42,27 @@ export default async function AdminHoyPage() {
 
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <Etiqueta>HOY</Etiqueta>
+          <div className="flex items-center gap-2 text-[10px] font-extrabold tracking-[.2em] text-[var(--muted)]">
+            <span className="size-2 rounded-full bg-primary shadow-[0_0_12px_rgba(183,243,75,.65)]" />
+            HOY · EN VIVO
+          </div>
           <h1 className="mt-2 text-3xl font-bold tracking-tight">Tu operación</h1>
         </div>
         <NuevoEnvio comercios={comercios ?? []} cadetes={cadetes ?? []} comisionDefault={mensajeria?.comision_cadete ?? 0} />
       </header>
 
-      <div className="grid grid-cols-3 gap-3">
-        <Tarjeta className="p-4 text-center">
-          <p className="text-2xl font-bold tabular-nums sm:text-3xl">{kpis?.envios ?? 0}</p>
-          <p className="mt-1 text-[10px] tracking-[.16em] text-[var(--muted)]">ENVÍOS</p>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <Tarjeta className="min-w-0 p-3 text-center sm:p-4">
+          <p className="truncate text-lg font-bold tabular-nums sm:text-2xl md:text-3xl">{kpis?.envios ?? 0}</p>
+          <p className="mt-1 text-[9px] tracking-[.14em] text-[var(--muted)] sm:text-[10px] sm:tracking-[.16em]">ENVÍOS</p>
         </Tarjeta>
-        <Tarjeta className="p-4 text-center">
-          <p className="text-2xl font-bold tabular-nums text-primary sm:text-3xl">{kpis?.entregados ?? 0}</p>
-          <p className="mt-1 text-[10px] tracking-[.16em] text-[var(--muted)]">ENTREGADOS</p>
+        <Tarjeta className="min-w-0 p-3 text-center sm:p-4">
+          <p className="truncate text-lg font-bold tabular-nums text-primary sm:text-2xl md:text-3xl">{kpis?.entregados ?? 0}</p>
+          <p className="mt-1 text-[9px] tracking-[.14em] text-[var(--muted)] sm:text-[10px] sm:tracking-[.16em]">ENTREGADOS</p>
         </Tarjeta>
-        <Tarjeta className="p-4 text-center">
-          <p className="text-2xl font-bold tabular-nums text-[var(--cyan)] sm:text-3xl">{formatMonto(kpis?.a_rendir ?? 0)}</p>
-          <p className="mt-1 text-[10px] tracking-[.16em] text-[var(--muted)]">A RENDIR</p>
+        <Tarjeta className="min-w-0 p-3 text-center sm:p-4">
+          <p className="truncate text-lg font-bold tabular-nums text-[var(--cyan)] sm:text-2xl md:text-3xl">{formatMonto(kpis?.a_rendir ?? 0)}</p>
+          <p className="mt-1 text-[9px] tracking-[.14em] text-[var(--muted)] sm:text-[10px] sm:tracking-[.16em]">SALDO PENDIENTE</p>
         </Tarjeta>
       </div>
 

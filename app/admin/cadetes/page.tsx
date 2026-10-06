@@ -72,7 +72,7 @@ export default async function CadetesPage() {
                   <p className={`text-2xl font-bold tracking-tight tabular-nums ${c.saldo > 0 ? 'text-[var(--cyan)]' : ''}`}>
                     {formatMonto(c.saldo)}
                   </p>
-                  <p className="text-[10px] tracking-[.16em] text-[var(--muted)]">A RENDIR</p>
+                  <p className="text-[10px] tracking-[.16em] text-[var(--muted)]">SALDO PENDIENTE</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">

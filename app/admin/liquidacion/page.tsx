@@ -77,7 +77,7 @@ export default async function LiquidacionPage({
                   <tr className="border-b border-border bg-[var(--panel)] text-left text-[10px] tracking-[.14em] text-[var(--muted)]">
                     <th className="px-4 py-3 font-medium">CADETE</th>
                     <th className="px-4 py-3 text-right font-medium">ENVÍOS</th>
-                    <th className="px-4 py-3 text-right font-medium">A RENDIR</th>
+                    <th className="px-4 py-3 text-right font-medium">GENERADO</th>
                     <th className="px-4 py-3 text-right font-medium">RENDIDO</th>
                     <th className="px-4 py-3 text-right font-medium">SALDO</th>
                   </tr>
