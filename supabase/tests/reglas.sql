@@ -323,6 +323,47 @@ do $$ declare r record; begin
   assert r.comision = 1700, format('el comercio no puede alterar la comisión: %s', row_to_json(r));
 end $$;
 
+-- ── 13. Gastos, ganancia neta y ranking de comercios ──────────────────────
+reset role;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-0000000000a1","role":"authenticated"}', true);
+set local role authenticated;
+
+insert into public.gastos (concepto, monto, nota) values ('Nafta', 1500, 'moto 1');
+do $$ declare r record; begin
+  select * into strict r from public.gastos where concepto = 'Nafta';
+  assert r.mensajeria_id = '10000000-0000-4000-8000-000000000001' and r.fecha_operativa = public.fecha_operativa(),
+    format('gasto: %s', row_to_json(r));
+end $$;
+
+do $$ declare k record; d record; begin
+  select * into strict k from public.kpis_hoy();
+  assert k.gastos = 1500 and k.ganancia = k.a_rendir - k.gastos,
+    format('kpis_hoy con gastos: %s', row_to_json(k));
+
+  select * into strict d from public.metricas_diarias(1);
+  assert d.gastos = 1500 and d.ganancia = d.facturado - d.comisiones - d.gastos,
+    format('metricas_diarias: %s', row_to_json(d));
+end $$;
+
+do $$ declare r record; begin
+  select * into strict r from public.ranking_comercios(30) where nombre = 'Pizzería';
+  assert r.entregados = 2 and r.facturado = 6000, format('ranking_comercios: %s', row_to_json(r));
+end $$;
+
+-- Nadie más puede registrar gastos ni ver los de la mensajería.
+reset role;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-0000000000c1","role":"authenticated"}', true);
+set local role authenticated;
+do $$ begin
+  assert (select count(*) from public.gastos) = 0, 'el cadete no ve los gastos';
+  begin
+    insert into public.gastos (concepto, monto) values ('Intento', 100);
+    raise exception 'NO_FALLO';
+  exception when others then
+    if sqlerrm = 'NO_FALLO' then raise exception 'el cadete no debería poder registrar gastos'; end if;
+  end;
+end $$;
+
 reset role;
 select 'TODOS LOS TESTS PASARON' as resultado;
 rollback;

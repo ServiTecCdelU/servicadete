@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { cambiarCredencial, crearUsuarioInterno } from '@/lib/auth/crear-usuario-interno'
+import { cambiarCredencial, cambiarEmailUsuario, crearUsuarioInterno } from '@/lib/auth/crear-usuario-interno'
 import { requireRol } from '@/lib/auth/perfil'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -155,6 +155,36 @@ export async function cambiarPinComercio(_prev: CambiarPinState, formData: FormD
   } catch (err) {
     console.error('[comercios] cambiar pin', err)
     return { estado: 'error', mensaje: 'No se pudo cambiar el PIN.' }
+  }
+}
+
+const cambiarEmailComercioSchema = z.object({ comercioId: z.uuid(), email: z.email('Email inválido').trim().toLowerCase() })
+
+export type CambiarEmailState = { estado: 'inicial' } | { estado: 'error'; mensaje: string } | { estado: 'ok'; email: string }
+
+export async function cambiarEmailComercio(_prev: CambiarEmailState, formData: FormData): Promise<CambiarEmailState> {
+  const perfil = await requireRol('admin')
+  const parsed = cambiarEmailComercioSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return { estado: 'error', mensaje: parsed.error.issues[0]?.message ?? 'Email inválido.' }
+
+  const supabase = await createClient()
+  const { data: comercio, error: errComercio } = await supabase
+    .from('comercios')
+    .select('perfil_id')
+    .eq('id', parsed.data.comercioId)
+    .eq('mensajeria_id', perfil.mensajeriaId as string)
+    .single()
+  if (errComercio || !comercio.perfil_id) return { estado: 'error', mensaje: 'Ese comercio todavía no tiene acceso.' }
+
+  try {
+    const admin = createAdminClient()
+    await cambiarEmailUsuario(admin, comercio.perfil_id, parsed.data.email)
+    revalidatePath('/admin/comercios')
+    return { estado: 'ok', email: parsed.data.email }
+  } catch (err) {
+    const mensaje = err instanceof Error && err.message === 'EMAIL_EXISTS' ? 'Ese email ya tiene una cuenta.' : 'No se pudo cambiar el email.'
+    console.error('[comercios] cambiar email', err)
+    return { estado: 'error', mensaje }
   }
 }
 

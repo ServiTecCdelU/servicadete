@@ -9,6 +9,9 @@ const ITEMS = [
   { href: '/admin', label: 'Hoy' },
   { href: '/admin/cadetes', label: 'Cadetes' },
   { href: '/admin/comercios', label: 'Comercios' },
+  { href: '/admin/liquidacion', label: 'Liquidación' },
+  { href: '/admin/metricas', label: 'Métricas' },
+  { href: '/admin/configuracion', label: 'Configuración' },
 ]
 
 export function AdminNav() {

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { cambiarCredencial, crearUsuarioInterno } from '@/lib/auth/crear-usuario-interno'
+import { cambiarCredencial, cambiarEmailUsuario, crearUsuarioInterno } from '@/lib/auth/crear-usuario-interno'
 import { requireRol } from '@/lib/auth/perfil'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -182,6 +182,39 @@ export async function cambiarPinCadete(_prev: CambiarPinState, formData: FormDat
   } catch (err) {
     console.error('[cadetes] cambiar pin', err)
     return { estado: 'error', mensaje: 'No se pudo cambiar el PIN.' }
+  }
+}
+
+const cambiarEmailSchema = z.object({ cadeteId: z.uuid(), email: z.email('Email inválido').trim().toLowerCase() })
+
+export type CambiarEmailState = { estado: 'inicial' } | { estado: 'error'; mensaje: string } | { estado: 'ok'; email: string }
+
+// Cargar o cambiar el email real habilita el ingreso con Google además de usuario+PIN
+// (Supabase vincula la cuenta por el email). El PIN sigue funcionando igual, pero a
+// partir de ahora el cadete entra con este email, no con el "usuario.slug" anterior.
+export async function cambiarEmailCadete(_prev: CambiarEmailState, formData: FormData): Promise<CambiarEmailState> {
+  const perfil = await requireRol('admin')
+  const parsed = cambiarEmailSchema.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return { estado: 'error', mensaje: parsed.error.issues[0]?.message ?? 'Email inválido.' }
+
+  const supabase = await createClient()
+  const { data: cadete, error: errCadete } = await supabase
+    .from('cadetes')
+    .select('perfil_id')
+    .eq('id', parsed.data.cadeteId)
+    .eq('mensajeria_id', perfil.mensajeriaId as string)
+    .single()
+  if (errCadete || !cadete.perfil_id) return { estado: 'error', mensaje: 'Ese cadete no tiene usuario.' }
+
+  try {
+    const admin = createAdminClient()
+    await cambiarEmailUsuario(admin, cadete.perfil_id, parsed.data.email)
+    revalidatePath('/admin/cadetes')
+    return { estado: 'ok', email: parsed.data.email }
+  } catch (err) {
+    const mensaje = err instanceof Error && err.message === 'EMAIL_EXISTS' ? 'Ese email ya tiene una cuenta.' : 'No se pudo cambiar el email.'
+    console.error('[cadetes] cambiar email', err)
+    return { estado: 'error', mensaje }
   }
 }
 

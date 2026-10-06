@@ -7,9 +7,7 @@ import { cambiarCredencial } from '@/lib/auth/crear-usuario-interno'
 import { generarPassword } from '@/lib/auth/credenciales'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-
-const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/
-const SLUGS_RESERVADOS = new Set(['login', 'auth', 'admin', 'superadmin', 'cadete', 'comercio', 'api', 'envio'])
+import { SLUG_RE, SLUGS_RESERVADOS } from '@/lib/validacion/slug'
 
 const nuevaMensajeriaSchema = z.object({
   nombre: z.string().trim().min(2, 'Mínimo 2 caracteres').max(80),

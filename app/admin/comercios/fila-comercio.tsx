@@ -5,10 +5,12 @@ import { Aviso, Boton, Campo, inputClass, Tarjeta } from '@/components/app/ui'
 import {
   actualizarComercio,
   actualizarDatosComercio,
+  cambiarEmailComercio,
   cambiarEstadoComercio,
   cambiarPinComercio,
   generarAccesoComercio,
   type AccesoState,
+  type CambiarEmailState,
   type CambiarPinState,
   type EditarComercioState,
 } from './actions'
@@ -25,6 +27,7 @@ interface FilaComercioProps {
     activo: boolean
     cadeteFijoId: string | null
     tieneAcceso: boolean
+    email: string | null
   }
   cadetes: Cadete[]
 }
@@ -78,8 +81,15 @@ export function FilaComercio({ comercio, cadetes }: FilaComercioProps) {
         <Boton className="h-10 px-3 text-xs">Guardar</Boton>
       </form>
 
-      <div className="mt-4 border-t border-border pt-4">
-        {comercio.tieneAcceso ? <CambiarPin comercioId={comercio.id} /> : <GenerarAcceso comercioId={comercio.id} nombreSugerido={comercio.nombre} />}
+      <div className="mt-4 grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
+        {comercio.tieneAcceso ? (
+          <>
+            <CambiarEmail comercioId={comercio.id} emailActual={comercio.email} />
+            <CambiarPin comercioId={comercio.id} />
+          </>
+        ) : (
+          <GenerarAcceso comercioId={comercio.id} nombreSugerido={comercio.nombre} />
+        )}
       </div>
     </div>
   )
@@ -111,6 +121,41 @@ function EditarDatos({ comercio }: { comercio: { id: string; nombre: string; dir
         </Boton>
       </div>
     </form>
+  )
+}
+
+function CambiarEmail({ comercioId, emailActual }: { comercioId: string; emailActual: string | null }) {
+  const [abierto, setAbierto] = useState(false)
+  const [state, formAction, pending] = useActionState<CambiarEmailState, FormData>(cambiarEmailComercio, { estado: 'inicial' })
+  const emailMostrado = state.estado === 'ok' ? state.email : emailActual
+
+  return (
+    <div>
+      <p className="text-xs text-[var(--muted)]">
+        Login actual: <span className="select-all text-foreground">{emailMostrado ?? 'sin usuario'}</span>
+      </p>
+      {state.estado === 'ok' && (
+        <p className="mt-1 text-xs text-primary">Listo. Ahora entra con este email (y PIN, o con Google).</p>
+      )}
+
+      {!abierto ? (
+        <Boton type="button" variante="secundario" onClick={() => setAbierto(true)} className="mt-2 h-9 px-3 text-xs">
+          Cargar / cambiar email
+        </Boton>
+      ) : (
+        <form action={formAction} className="mt-2 flex flex-wrap items-center gap-2">
+          <input type="hidden" name="comercioId" value={comercioId} />
+          <input name="email" type="email" placeholder="email@gmail.com" required className={`${inputClass} h-9 w-56 text-sm`} />
+          {state.estado === 'error' && <span className="text-xs text-[var(--orange)]">{state.mensaje}</span>}
+          <Boton disabled={pending} className="h-9 px-3 text-xs">
+            {pending ? 'Guardando…' : 'Confirmar'}
+          </Boton>
+          <Boton type="button" variante="secundario" onClick={() => setAbierto(false)} className="h-9 px-3 text-xs">
+            Cancelar
+          </Boton>
+        </form>
+      )}
+    </div>
   )
 }
 

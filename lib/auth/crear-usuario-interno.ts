@@ -52,6 +52,23 @@ export async function crearUsuarioInterno(
   throw new Error('No se pudo generar un usuario único, probá con otro nombre')
 }
 
+export async function obtenerEmailUsuario(admin: SupabaseClient<Database>, userId: string): Promise<string | null> {
+  const { data, error } = await admin.auth.admin.getUserById(userId)
+  if (error) return null
+  return data.user.email ?? null
+}
+
+// Cambia el email de login de un usuario ya creado. Se confirma al instante (sin
+// mandar mail de verificación): evita gastar la cuota de email del plan gratuito.
+export async function cambiarEmailUsuario(
+  admin: SupabaseClient<Database>,
+  userId: string,
+  email: string,
+): Promise<void> {
+  const { error } = await admin.auth.admin.updateUserById(userId, { email: email.trim().toLowerCase(), email_confirm: true })
+  if (error) throw new Error(error.code === 'email_exists' ? 'EMAIL_EXISTS' : error.message)
+}
+
 // Cambia el PIN/contraseña de un usuario ya creado (cadete, comercio o admin).
 // Si no se pasa pin, se genera uno nuevo al azar.
 export async function cambiarCredencial(

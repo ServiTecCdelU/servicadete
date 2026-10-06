@@ -226,6 +226,47 @@ export type Database = {
           },
         ]
       }
+      gastos: {
+        Row: {
+          concepto: string
+          created_at: string
+          created_by: string | null
+          fecha_operativa: string
+          id: string
+          mensajeria_id: string
+          monto: number
+          nota: string | null
+        }
+        Insert: {
+          concepto: string
+          created_at?: string
+          created_by?: string | null
+          fecha_operativa?: string
+          id?: string
+          mensajeria_id: string
+          monto: number
+          nota?: string | null
+        }
+        Update: {
+          concepto?: string
+          created_at?: string
+          created_by?: string | null
+          fecha_operativa?: string
+          id?: string
+          mensajeria_id?: string
+          monto?: number
+          nota?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gastos_mensajeria_id_fkey"
+            columns: ["mensajeria_id"]
+            isOneToOne: false
+            referencedRelation: "mensajerias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mensajerias: {
         Row: {
           activa: boolean
@@ -373,6 +414,9 @@ export type Database = {
           a_rendir: number
           entregados: number
           envios: number
+          ganancia: number
+          gastos: number
+          pagado_cadetes: number
         }[]
       }
       liquidacion_semana: {
@@ -405,6 +449,54 @@ export type Database = {
           id: string
           nombre: string
           slug: string
+        }[]
+      }
+      metricas_diarias: {
+        Args: { p_dias?: number }
+        Returns: {
+          cancelados: number
+          comisiones: number
+          entregados: number
+          envios: number
+          facturado: number
+          fecha: string
+          ganancia: number
+          gastos: number
+        }[]
+      }
+      metricas_mensuales: {
+        Args: { p_meses?: number }
+        Returns: {
+          comisiones: number
+          entregados: number
+          envios: number
+          facturado: number
+          ganancia: number
+          gastos: number
+          mes: string
+        }[]
+      }
+      metricas_semanales: {
+        Args: { p_semanas?: number }
+        Returns: {
+          comisiones: number
+          entregados: number
+          envios: number
+          facturado: number
+          ganancia: number
+          gastos: number
+          semana_fin: string
+          semana_inicio: string
+        }[]
+      }
+      ranking_comercios: {
+        Args: { p_dias?: number }
+        Returns: {
+          comercio_id: string
+          entregados: number
+          envios: number
+          facturado: number
+          nombre: string
         }[]
       }
       resumen_cadete: {

@@ -1,11 +1,14 @@
 import { Etiqueta, Tarjeta } from '@/components/app/ui'
+import { obtenerEmailUsuario } from '@/lib/auth/crear-usuario-interno'
+import { esUsuarioInterno } from '@/lib/auth/usuario-interno'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { FilaComercio } from './fila-comercio'
 import { NuevoComercio } from './nuevo-comercio'
 
 export default async function ComerciosPage() {
   const supabase = await createClient()
-  const [{ data: comercios, error }, { data: cadetes }] = await Promise.all([
+  const [{ data: comerciosDb, error }, { data: cadetes }] = await Promise.all([
     supabase
       .from('comercios')
       .select('id, nombre, direccion, telefono, tarifa, activo, cadete_fijo_id, perfil_id')
@@ -13,6 +16,18 @@ export default async function ComerciosPage() {
       .order('nombre'),
     supabase.from('cadetes').select('id, nombre').eq('activo', true).order('nombre'),
   ])
+
+  // El email de login vive en auth.users, no en la tabla: se resuelve aparte (admin API).
+  const admin = createAdminClient()
+  const comercios = comerciosDb
+    ? await Promise.all(
+        comerciosDb.map(async (c) => {
+          const raw = c.perfil_id ? await obtenerEmailUsuario(admin, c.perfil_id) : null
+          const email = raw && !esUsuarioInterno(raw) ? raw : (raw?.split('@')[0] ?? null)
+          return { ...c, email }
+        }),
+      )
+    : null
 
   return (
     <div className="grid gap-8">
@@ -30,13 +45,13 @@ export default async function ComerciosPage() {
         <Tarjeta>
           <p className="text-sm text-[var(--orange)]">No pudimos cargar los comercios. Recargá la página.</p>
         </Tarjeta>
-      ) : comercios.length === 0 ? (
+      ) : (comercios ?? []).length === 0 ? (
         <Tarjeta>
           <p className="text-sm text-[var(--muted)]">Todavía no hay comercios. Creá el primero arriba.</p>
         </Tarjeta>
       ) : (
         <ul className="grid gap-3">
-          {comercios.map((c) => (
+          {(comercios ?? []).map((c) => (
             <li key={c.id}>
               <FilaComercio
                 comercio={{
@@ -48,6 +63,7 @@ export default async function ComerciosPage() {
                   activo: c.activo,
                   cadeteFijoId: c.cadete_fijo_id,
                   tieneAcceso: c.perfil_id !== null,
+                  email: c.email,
                 }}
                 cadetes={cadetes ?? []}
               />

@@ -2,10 +2,17 @@
 
 import { useActionState, useState } from 'react'
 import { Aviso, Boton, Campo, inputClass, Tarjeta } from '@/components/app/ui'
-import { actualizarCadete, cambiarPinCadete, type CambiarPinState, type EditarCadeteState } from './actions'
+import {
+  actualizarCadete,
+  cambiarEmailCadete,
+  cambiarPinCadete,
+  type CambiarEmailState,
+  type CambiarPinState,
+  type EditarCadeteState,
+} from './actions'
 
 interface EditarCadeteProps {
-  cadete: { id: string; nombre: string; telefono: string | null; dni: string | null }
+  cadete: { id: string; nombre: string; telefono: string | null; dni: string | null; email: string | null }
 }
 
 export function EditarCadete({ cadete }: EditarCadeteProps) {
@@ -55,10 +62,52 @@ export function EditarCadete({ cadete }: EditarCadeteProps) {
         </div>
       </form>
 
-      <div className="mt-4 border-t border-border pt-4">
+      <div className="mt-4 grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
+        <CambiarEmail cadeteId={cadete.id} emailActual={cadete.email} />
         <CambiarPin cadeteId={cadete.id} />
       </div>
     </Tarjeta>
+  )
+}
+
+function CambiarEmail({ cadeteId, emailActual }: { cadeteId: string; emailActual: string | null }) {
+  const [abierto, setAbierto] = useState(false)
+  const [state, formAction, pending] = useActionState<CambiarEmailState, FormData>(cambiarEmailCadete, { estado: 'inicial' })
+  const emailMostrado = state.estado === 'ok' ? state.email : emailActual
+
+  return (
+    <div>
+      <p className="text-xs text-[var(--muted)]">
+        Login actual: <span className="select-all text-foreground">{emailMostrado ?? 'sin usuario'}</span>
+      </p>
+      {state.estado === 'ok' && (
+        <p className="mt-1 text-xs text-primary">Listo. Ahora entra con este email (y PIN, o con Google).</p>
+      )}
+
+      {!abierto ? (
+        <Boton type="button" variante="secundario" onClick={() => setAbierto(true)} className="mt-2 h-9 px-3 text-xs">
+          Cargar / cambiar email
+        </Boton>
+      ) : (
+        <form action={formAction} className="mt-2 flex flex-wrap items-center gap-2">
+          <input type="hidden" name="cadeteId" value={cadeteId} />
+          <input
+            name="email"
+            type="email"
+            placeholder="email@gmail.com"
+            required
+            className={`${inputClass} h-9 w-56 text-sm`}
+          />
+          {state.estado === 'error' && <span className="text-xs text-[var(--orange)]">{state.mensaje}</span>}
+          <Boton disabled={pending} className="h-9 px-3 text-xs">
+            {pending ? 'Guardando…' : 'Confirmar'}
+          </Boton>
+          <Boton type="button" variante="secundario" onClick={() => setAbierto(false)} className="h-9 px-3 text-xs">
+            Cancelar
+          </Boton>
+        </form>
+      )}
+    </div>
   )
 }
 
